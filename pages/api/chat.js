@@ -140,7 +140,10 @@ function classifyAdvanced(text) {
 }
 
 function isFirstInteraction(historique) {
-  return !historique || historique.length < 50;
+  if (!historique) return true;
+  const hist = normalize(historique);
+  // Si l'historique ne contient pas de réponse du bot, c'est une première interaction
+  return hist.length < 30 || !hist.includes('autoai') && !hist.includes('assistant');
 }
 
 // ============ PARSING ============
@@ -210,30 +213,39 @@ export default async function handler(req, res) {
   const classification = classifyAdvanced(question);
   const isFirst = isFirstInteraction(historique);
 
-  // Construction du prompt - VERSION SIMPLE
-  const modeResponse = isFirst ? 'EMPATHIQUE (100 mots max)' : 'CONCIS (80 mots max strictement)';
-  const toneInstr = isFirst ? 
-    'Réponse empathique et pédagogique. Expliquez ce qu\'est un FAP.' :
-    'Réponse concise et directe vers la solution.';
-
-  const system = 'Tu es l\'assistant Re-Fap, expert en nettoyage de filtres à particules.\n\n' +
-    'CONTEXTE: ' + classification.type + ' | Première interaction: ' + isFirst + '\n\n' +
-    'DÉLAIS RÉELS OBLIGATOIRES :\n' +
+  // Construction du prompt - VERSION SIMPLE MAIS STRICTE
+  let systemPrompt = 'Tu es l\'assistant Re-Fap, expert en nettoyage de filtres à particules.\n\n';
+  
+  if (isFirst) {
+    systemPrompt += 'PREMIÈRE INTERACTION - MODE EMPATHIQUE OBLIGATOIRE :\n' +
+      '- Commencer par "Bonjour ! Je comprends votre inquiétude..."\n' +
+      '- Rassurer le client\n' +
+      '- Expliquer brièvement ce qu\'est un FAP et pourquoi il s\'encrasse\n' +
+      '- Mentionner que c\'est résoluble\n' +
+      '- 100 mots maximum\n' +
+      '- Finir par UNE question sur les symptômes\n\n';
+  } else {
+    systemPrompt += 'SUITE DE CONVERSATION - MODE CONCIS :\n' +
+      '- 80 mots maximum strictement\n' +
+      '- Aller directement à la solution\n\n';
+  }
+  
+  systemPrompt += 'DÉLAIS RÉELS OBLIGATOIRES :\n' +
     '- Carter-Cash équipé : 4 heures, 99-149€\n' +
     '- Carter-Cash non équipé : 48 heures, 199€ port compris\n' +
     '- Garage partenaire : 48 heures, 99-149€ + main d\'œuvre\n\n' +
-    'MODE: ' + modeResponse + '\n\n' +
     'LOGIQUE :\n' +
     '1. VOYANT CLIGNOTANT : Mode dégradé, évitez longs trajets, question démontage\n' +
     '2. SYMPTÔMES MULTIPLES : FAP saturé, question démontage directe\n' +
     '3. CLIENT NE PEUT PAS : "Garage partenaire : démontage, nettoyage, remontage en 48h pour 99-149€ + main d\'œuvre. Cliquez sur Trouver un garage partenaire."\n' +
     '4. CLIENT PEUT : "Carter-Cash équipé 4h (99-149€) ou autres 48h (199€). Cliquez sur Trouver un Carter-Cash."\n\n' +
-    'TONE: ' + toneInstr + '\n\n' +
-    'INTERDICTIONS :\n' +
-    '- Jamais inventer délais (ex: "1-2 heures")\n' +
-    '- Jamais dépasser 80 mots après première interaction\n' +
-    '- Utiliser uniquement délais des données\n' +
-    '- Pas d\'emojis, pas de listes à puces';
+    'INTERDICTIONS STRICTES :\n' +
+    '- Jamais d\'astérisques ou abréviations\n' +
+    '- Jamais inventer délais\n' +
+    '- Pas d\'emojis, pas de listes à puces\n' +
+    '- Format naturel en paragraphes';
+
+  const system = systemPrompt;
 
   const userContent = 'Historique: ' + (historique || '(Première interaction)') + '\n' +
     'Question: ' + question + '\n' +
