@@ -387,9 +387,15 @@ export default async function handler(req, res) {
   const classification = classifyAdvanced(question);
   const isFirst = isFirstInteraction(historique);
 
-  // Prompt système adaptatif selon le contexte
-const system = `
-Tu es l'assistant Re-Fap, expert en nettoyage de filtres à particules (FAP).
+  // Construction du prompt système avec correction syntaxe
+  let toneInstructions = '';
+  if (isFirst) {
+    toneInstructions = 'EMPATHIQUE: Rassurez le client, expliquez brièvement le problème. PÉDAGOGIQUE: Expliquez ce qu\'est un FAP.';
+  } else {
+    toneInstructions = 'CONCIS: Réponses courtes et directes vers la solution.';
+  }
+
+  const system = `Tu es l'assistant Re-Fap, expert en nettoyage de filtres à particules (FAP).
 
 [CONTEXTE: ${classification.type} | Confiance: ${classification.confidence} | Première interaction: ${isFirst}]
 
@@ -400,48 +406,30 @@ DÉLAIS RÉELS OBLIGATOIRES (NE JAMAIS INVENTER) :
 
 RÈGLE ABSOLUE : UTILISER UNIQUEMENT LES INFORMATIONS DES DONNÉES. JAMAIS INVENTER.
 
-MODE DE RÉPONSE:
-${isFirst ? 'EMPATHIQUE (100 mots max)' : 'CONCIS ET DIRECT (80 mots max strictement)'}
+MODE DE RÉPONSE: ${isFirst ? 'EMPATHIQUE (100 mots max)' : 'CONCIS ET DIRECT (80 mots max strictement)'}
 
-LOGIQUE :
+LOGIQUE TECHNIQUE :
+
 1. VOYANT CLIGNOTANT : Mode dégradé, évitez longs trajets, question démontage
+
 2. SYMPTÔMES MULTIPLES : FAP saturé confirmé, question démontage directe  
-3. CLIENT NE PEUT PAS DÉMONTER : "Garage partenaire : démontage, nettoyage, remontage en 48h pour 99-149€ + main d'œuvre. Cliquez sur Trouver un garage partenaire."
-4. CLIENT PEUT DÉMONTER : "Carter-Cash équipé 4h (99-149€) ou autres 48h (199€). Cliquez sur Trouver un Carter-Cash."
+
+3. CLIENT NE PEUT PAS DÉMONTER : 
+   "Nos garages partenaires s'occupent de tout : démontage, nettoyage haute pression et remontage en 48h pour 99-149€ plus main d'œuvre. Cliquez sur Trouver un garage partenaire."
+
+4. CLIENT PEUT DÉMONTER : 
+   "Carter-Cash équipé nettoie en 4h (99-149€) ou autres en 48h (199€ port compris). Cliquez sur Trouver un Carter-Cash."
+
+TONE: ${toneInstructions}
 
 INTERDICTIONS STRICTES :
-- Jamais inventer de délais
-- Jamais dire "1-2 heures" 
+- Jamais inventer de délais (ex: "1-2 heures")
 - Jamais dépasser 80 mots après première interaction
 - Toujours utiliser les délais exacts des données
 - Jamais d'informations non présentes dans le contexte
+- Pas d'emojis, pas de listes à puces`;
 
-SOLUTIONS EXACTES À UTILISER :
-- Ne peut pas démonter : "Nos garages partenaires s'occupent de tout : démontage, nettoyage haute pression et remontage en 48h pour 99-149€ plus main d'œuvre. Cliquez sur Trouver un garage partenaire."
-- Peut démonter : "Carter-Cash équipé nettoie en 4h (99-149€) ou autres en 48h (199€ port compris). Cliquez sur Trouver un Carter-Cash."
-`;
-
-TONE:
-${isFirst ? 
-`EMPATHIQUE: Rassurez le client, expliquez simplement le problème, montrez la compréhension.
-PÉDAGOGIQUE: Expliquez brièvement ce qu'est un FAP et pourquoi il s'encrasse.` :
-`CONCIS: Réponses courtes et directes.
-PRATIQUE: Allez droit au but vers la solution.`}
-
-SOLUTIONS FINALES:
-- Peut démonter: "Carter-Cash équipé nettoie en 4h (99-149€) ou autres en 48h (199€ port compris). Cliquez sur Trouver un Carter-Cash."
-- Ne peut pas: "Garage partenaire pour diagnostic complet et nettoyage (99-149€ + main d'œuvre). Cliquez sur Trouver un garage partenaire."
-- Non-FAP: "Diagnostic par garage partenaire recommandé. Cliquez sur Trouver un garage partenaire."
-
-RÈGLES:
-- Maximum 80 mots (sauf première interaction empathique: 100 mots max)
-- Pas d'emojis, pas de listes à puces
-- Maximum 2 questions avant solution
-- Fin après solution donnée
-`;
-
-  const userContent = `
-Historique: ${historique || '(Première interaction)'}
+  const userContent = `Historique: ${historique || '(Première interaction)'}
 Question: ${question}
 Classification: ${classification.type}
 Symptômes détectés: ${classification.symptoms?.join(', ') || 'aucun'}
@@ -454,8 +442,7 @@ ANALYSE:
 - Si suite de conversation → réponse concise et directe
 - Voyant clignotant = mode dégradé, pas urgence d'arrêt
 - Symptômes multiples → solution directe
-- Fin de conversation sur "merci/ok" → "Avec plaisir. Bonne journée !"
-`;
+- Fin de conversation sur "merci/ok" → "Avec plaisir. Bonne journée !"`;
 
   try {
     const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -478,7 +465,7 @@ ANALYSE:
 
     if (!r.ok) {
       const fallbackMessage = isFirst 
-        ? `Bonjour ! Je comprends votre inquiétude concernant votre véhicule. Un FAP (filtre à particules) est une pièce qui capture les particules des moteurs diesel. Quand il s'encrasse, cela cause les symptômes que vous décrivez. Heureusement, nous proposons un nettoyage efficace qui évite le remplacement coûteux. Quel symptôme observez-vous exactement ?`
+        ? `Bonjour ! Je comprends votre inquiétude concernant votre véhicule. Un FAP (filtre à particules) capture les particules des moteurs diesel. Quand il s'encrasse, cela cause les symptômes que vous décrivez. Notre nettoyage évite le remplacement coûteux. Quel symptôme observez-vous exactement ?`
         : `Problème de FAP détecté. Quel symptôme observez-vous : voyant allumé, perte de puissance ou fumée noire ?`;
       
       return res.status(200).json({ 
@@ -543,4 +530,3 @@ ANALYSE:
     });
   }
 }
-
