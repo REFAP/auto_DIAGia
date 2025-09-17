@@ -11,13 +11,15 @@ let queryCache = new Map();
 
 // ============ RÉPONSES EMPATHIQUES PRÉ-ÉCRITES ============
 const EMPATHETIC_RESPONSES = {
+  'voyant_clignotant': "Bonjour ! Je comprends que voir un voyant FAP clignoter peut être inquiétant. Rassurez-vous, cela signifie que votre véhicule a détecté un filtre à particules très encrassé et s'est mis en mode de protection pour éviter des dommages. Le moteur limite sa puissance pour se protéger, mais vous pouvez encore rouler sur de courtes distances. Pour mieux vous aider, depuis combien de temps ce voyant clignote-t-il ? Et avez-vous remarqué d'autres symptômes comme une perte de puissance importante ou une fumée noire à l'échappement ?",
+  
   'voyant_fap': "Bonjour ! Je comprends votre inquiétude concernant ce voyant FAP qui s'allume. C'est effectivement préoccupant mais rassurez-vous, c'est un problème fréquent et généralement résoluble. Le FAP (filtre à particules) capture les particules polluantes de votre moteur diesel. Avec le temps, il s'encrasse progressivement, d'où ce signal d'alerte. La bonne nouvelle c'est qu'un nettoyage professionnel évite le remplacement coûteux. Pour vous orienter vers la meilleure solution, avez-vous aussi remarqué une perte de puissance ou une fumée noire à l'échappement ?",
   
-  'dpf_sature': "Bonjour ! Je vois que vous avez détecté un problème de DPF (filtre à particules) saturé. C'est un souci classique sur les diesels modernes, mais pas de panique ! Ce filtre capture les suies pour protéger l'environnement, mais il finit par se colmater. Heureusement, notre nettoyage haute pression restaure ses performances pour seulement 99€ minimum, bien moins cher qu'un remplacement. Pour vous proposer la solution la plus adaptée, pouvez-vous me dire si vous observez d'autres symptômes comme une perte de puissance ?",
+  'dpf_sature': "Bonjour ! Je vois que vous avez détecté un problème de DPF (filtre à particules) saturé. C'est un souci classique sur les diesels modernes, mais pas de panique ! Ce filtre capture les suies pour protéger l'environnement, mais il finit par se colmater. Heureusement, notre nettoyage haute pression restaure ses performances pour seulement 99€ minimum, bien moins cher qu'un remplacement. Pour vous proposer la solution la plus adaptée, depuis quand observez-vous ce problème ? Et faites-vous plutôt de la ville ou de l'autoroute ?",
   
-  'perte_puissance': "Bonjour ! Cette perte de puissance que vous ressentez est effectivement frustrante au quotidien. Sur les véhicules diesel, c'est souvent lié à un filtre à particules encrassé qui empêche le moteur de respirer correctement. Imaginez un aspirateur avec un sac plein - c'est exactement ce qui arrive à votre moteur ! Notre nettoyage haute pression peut résoudre ce problème rapidement et économiquement. Avez-vous aussi un voyant FAP allumé ou remarqué une fumée noire à l'échappement ?",
+  'perte_puissance': "Bonjour ! Cette perte de puissance que vous ressentez est effectivement frustrante au quotidien. Sur les véhicules diesel, c'est souvent lié à un filtre à particules encrassé qui empêche le moteur de respirer correctement. Imaginez un aspirateur avec un sac plein - c'est exactement ce qui arrive à votre moteur ! Pour mieux comprendre votre situation, cette perte est-elle progressive ou soudaine ? Et avez-vous un voyant FAP allumé sur votre tableau de bord ?",
   
-  'fumee_noire': "Bonjour ! Cette fumée noire que vous observez est inquiétante, je comprends. C'est généralement le signe que votre FAP (filtre à particules) ne peut plus retenir les suies correctement car il est saturé. Votre moteur rejette alors directement les particules. La solution reste simple : un nettoyage professionnel redonne au filtre toute son efficacité. Pour confirmer le diagnostic, avez-vous également une perte de puissance ou un voyant moteur allumé ?",
+  'fumee_noire': "Bonjour ! Cette fumée noire que vous observez est inquiétante, je comprends. C'est généralement le signe que votre FAP (filtre à particules) ne peut plus retenir les suies correctement car il est saturé. Votre moteur rejette alors directement les particules. Pour évaluer la gravité, cette fumée apparaît-elle surtout à l'accélération ? Et depuis combien de temps l'observez-vous ?",
   
   'general': "Bonjour ! Je suis là pour vous aider avec votre problème de FAP. Les filtres à particules sont essentiels mais peuvent s'encrasser avec le temps, surtout en conduite urbaine. La bonne nouvelle, c'est qu'un nettoyage professionnel évite le remplacement coûteux et restaure les performances. Pour vous orienter au mieux, pouvez-vous me décrire les symptômes que vous observez : voyant allumé, perte de puissance, ou fumée noire ?"
 };
@@ -100,16 +102,37 @@ function tokenize(s) {
 function isFirstInteraction(historique) {
   if (!historique || historique.length < 50) return true;
   
-  // Si l'historique ne contient pas de réponse du bot, c'est une première interaction
   const hist = normalize(historique);
-  return !hist.includes('re-fap') && !hist.includes('carter-cash') && !hist.includes('garage partenaire') && !hist.includes('démontage');
+  
+  // Vérifier si le bot a déjà répondu avec ses phrases types
+  const botPhrases = [
+    'je comprends',
+    'rassurez-vous',
+    'carter-cash',
+    'garage partenaire',
+    'démontage',
+    'nettoyage haute pression',
+    '99€',
+    '48h',
+    'filtre à particules',
+    'mode dégradé'
+  ];
+  
+  // Si aucune phrase du bot n'est trouvée, c'est une première interaction
+  return !botPhrases.some(phrase => hist.includes(phrase));
 }
 
 // ============ SÉLECTION RÉPONSE EMPATHIQUE ============
 function getEmpatheticResponse(question) {
   const q = normalize(question);
   
-  if (/voyant|témoin|allume|clignot/i.test(q)) {
+  // Détection spécifique du voyant clignotant - PRIORITÉ ABSOLUE
+  if (/clignotant|clignote|flash/i.test(q)) {
+    return EMPATHETIC_RESPONSES['voyant_clignotant'];
+  }
+  
+  // Autres détections
+  if (/voyant|témoin|allume/i.test(q) && !(/clignotant|clignote/i.test(q))) {
     return EMPATHETIC_RESPONSES['voyant_fap'];
   }
   
@@ -227,10 +250,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Question invalide' });
   }
 
-  // Détection première interaction
+  // FORCE TOUJOURS la détection première interaction
   const isFirst = isFirstInteraction(historique);
   
-  // Si première interaction, utiliser la réponse empathique pré-écrite
+  // TOUJOURS utiliser réponse empathique en première interaction
   if (isFirst) {
     const empatheticReply = getEmpatheticResponse(question);
     return res.status(200).json({ 
@@ -263,35 +286,45 @@ export default async function handler(req, res) {
 
   const classification = classifyAdvanced(question);
 
-  // Construction du prompt pour interactions suivantes
+  // Construction du prompt pour interactions suivantes - MODE PROGRESSIF
   const system = `Tu es l'assistant Re-Fap, expert en nettoyage de filtres à particules.
 
-SUITE DE CONVERSATION - MODE CONCIS :
-- 80 mots maximum strictement
-- Réponse directe et professionnelle
-- Aller rapidement à la solution
+ANALYSE DE CONVERSATION :
+- Compte le nombre d'interactions dans l'historique
+- Si moins de 3 échanges : continuer le diagnostic avec questions
+- Si 3+ échanges : proposer les solutions
+
+MODE DIAGNOSTIC (interactions 2-3) :
+- Rester bienveillant et pédagogique
+- Poser UNE question pertinente pour affiner le diagnostic
+- Expliquer brièvement pourquoi cette information est importante
+- 80-100 mots
+
+MODE SOLUTION (après 3 échanges) :
+- Synthétiser le diagnostic
+- Proposer la solution adaptée
+- 80 mots maximum
 
 DÉLAIS RÉELS OBLIGATOIRES :
 - Carter-Cash équipé : 4 heures, 99-149€
 - Carter-Cash non équipé : 48 heures, 199€ port compris
 - Garage partenaire : 48 heures, 99-149€ + main d'œuvre
 
-LOGIQUE :
-1. VOYANT CLIGNOTANT : "Voyant clignotant confirme un FAP saturé. Mode dégradé, évitez les longs trajets. Pouvez-vous démonter le FAP vous-même ?"
-2. SYMPTÔMES MULTIPLES : "FAP saturé confirmé. Pouvez-vous le démonter vous-même ?"
-3. CLIENT NE PEUT PAS : "Garage partenaire : démontage, nettoyage, remontage en 48h pour 99-149€ + main d'œuvre. Cliquez sur Trouver un garage partenaire."
-4. CLIENT PEUT : "Carter-Cash équipé 4h (99-149€) ou autres 48h (199€). Cliquez sur Trouver un Carter-Cash."
+SOLUTIONS SELON PROFIL :
+- Client peut démonter : "Carter-Cash équipé nettoie en 4h (99-149€) ou autres en 48h (199€ port compris). Cliquez sur Trouver un Carter-Cash."
+- Client ne peut pas : "Nos garages partenaires s'occupent de tout en 48h pour 99-149€ + main d'œuvre. Cliquez sur Trouver un garage partenaire."
 
-INTERDICTIONS STRICTES :
+INTERDICTIONS :
 - Jamais inventer de délais
-- Jamais d'emojis ou listes
-- Format paragraphe naturel`;
+- Jamais d'emojis ou listes à puces
+- Jamais d'astérisques
+- Format paragraphe naturel
+- Ne jamais conclure trop vite`;
 
   const userContent = 'Historique: ' + historique + '\n' +
     'Question: ' + question + '\n' +
     'Classification: ' + classification.type + '\n\n' +
-    'Contexte: ' + contextText + '\n\n' +
-    'RAPPEL : Maximum 80 mots, aller directement à la solution.';
+    'Contexte: ' + contextText;
 
   try {
     const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -302,9 +335,9 @@ INTERDICTIONS STRICTES :
       },
       body: JSON.stringify({
         model: "mistral-medium-latest",
-        temperature: 0.1,
-        top_p: 0.6,
-        max_tokens: 120,
+        temperature: 0.3,
+        top_p: 0.7,
+        max_tokens: 150,
         messages: [
           { role: "system", content: system },
           { role: "user", content: userContent }
@@ -313,7 +346,7 @@ INTERDICTIONS STRICTES :
     });
 
     if (!r.ok) {
-      const fallbackMessage = "Problème de FAP détecté. Pouvez-vous démonter le filtre vous-même ? Si oui : Carter-Cash équipé 4h ou autres 48h. Sinon : garage partenaire 48h avec main d'œuvre.";
+      const fallbackMessage = "Je comprends votre situation. Pour affiner mon diagnostic, pouvez-vous me dire si vous faites plutôt de la ville ou de l'autoroute ? Cette information m'aidera à évaluer le niveau d'encrassement de votre FAP.";
       
       return res.status(200).json({ 
         reply: fallbackMessage, 
@@ -325,7 +358,7 @@ INTERDICTIONS STRICTES :
     const reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
     
     if (!reply) {
-      const defaultReply = "FAP saturé confirmé. Pouvez-vous démonter le filtre vous-même ?";
+      const defaultReply = "Pour mieux vous aider, pouvez-vous préciser depuis quand vous observez ces symptômes ?";
       
       return res.status(200).json({ 
         reply: defaultReply, 
@@ -339,7 +372,8 @@ INTERDICTIONS STRICTES :
       debug: process.env.NODE_ENV === 'development' ? {
         queryTokens: queryTokens.slice(0, 5),
         topBlocks: ranked.map(b => ({ title: b.title })),
-        classification: classification
+        classification: classification,
+        isFirstInteraction: isFirst
       } : undefined
     };
 
@@ -348,7 +382,7 @@ INTERDICTIONS STRICTES :
   } catch (error) {
     console.error('Erreur API:', error);
     
-    const backupMessage = "Problème FAP détecté. Pouvez-vous démonter le filtre ?";
+    const backupMessage = "Je comprends votre problème. Pouvez-vous me dire si vous observez d'autres symptômes ?";
     
     return res.status(200).json({ 
       reply: backupMessage, 
