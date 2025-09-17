@@ -11,11 +11,9 @@ let queryCache = new Map();
 
 // ============ STOPWORDS ÉTENDUES ============
 const STOPWORDS_FR = new Set([
-  // Mots courants
   'le','la','les','de','des','du','un','une','et','ou','au','aux','en','à','a','d\'','l\'',
   'pour','avec','sur','est','c\'est','il','elle','on','tu','te','ton','ta','tes','vos','votre',
   'mes','mon','ma','mais','plus','moins','que','qui','dans','ce','cet','cette','ses','son','leurs',
-  // Mots spécifiques ajoutés
   'avoir','être','faire','aller','dire','venir','voir','savoir','prendre','vouloir','pouvoir',
   'bonjour','salut','merci','svp','voilà','donc','alors','comme','très','tout','tous','toute',
   'oui','non','peut','peux','bien','mal','comment','quand','où','pourquoi','combien'
@@ -23,35 +21,21 @@ const STOPWORDS_FR = new Set([
 
 // ============ SYNONYMES AUTOMOBILES ÉTENDUS ============
 const AUTOMOTIVE_SYNONYMS = {
-  // FAP et filtres
   'fap': ['filtre', 'particule', 'particules', 'dpf', 'diesel'],
   'filtre': ['fap', 'dpf', 'filtration', 'filtrer'],
   'particule': ['particules', 'suie', 'carbone', 'pollution'],
   'encrassé': ['saturé', 'colmaté', 'bouché', 'obstrué', 'sale'],
   'saturé': ['encrassé', 'plein', 'colmaté', 'bouché'],
-  'colmaté': ['bouché', 'obstrué', 'encrassé', 'saturé'],
-  
-  // Symptômes
   'voyant': ['témoin', 'lampe', 'indicateur', 'signal', 'alerte'],
   'perte': ['baisse', 'diminution', 'réduction', 'faible'],
   'puissance': ['force', 'performance', 'accélération', 'reprises'],
   'fumée': ['fumées', 'échappement', 'vapeur', 'émission'],
-  'noire': ['sombre', 'foncée', 'opaque'],
-  
-  // Services
   'nettoyage': ['lavage', 'décrassage', 'maintenance', 'entretien'],
   'diagnostic': ['diag', 'contrôle', 'vérification', 'analyse'],
-  'garage': ['atelier', 'mécanicien', 'réparation', 'service'],
-  'carter': ['magasin', 'centre', 'enseigne', 'dépôt'],
-  
-  // Techniques
-  'démontage': ['dépose', 'enlever', 'retirer', 'sortir'],
-  'remontage': ['repose', 'remettre', 'installer', 'monter'],
-  'haute': ['fort', 'puissant', 'intense'],
-  'pression': ['force', 'jet', 'soufflage']
+  'garage': ['atelier', 'mécanicien', 'réparation', 'service']
 };
 
-// ============ FONCTIONS UTILITAIRES AMÉLIORÉES ============
+// ============ FONCTIONS UTILITAIRES ============
 function normalize(s = '') {
   return s.toLowerCase()
     .normalize('NFD').replace(/\p{Diacritic}+/gu, '')
@@ -61,11 +45,7 @@ function normalize(s = '') {
 }
 
 function frenchStem(word) {
-  // Stemming français basique mais efficace
-  const endings = [
-    'ment', 'tion', 'sion', 'ance', 'ence', 'able', 'ible', 'ique', 'oire',
-    'eur', 'euse', 'ant', 'ent', 'age', 'aire', 'aux', 'eau', 'eaux'
-  ];
+  const endings = ['ment', 'tion', 'sion', 'ance', 'ence', 'able', 'ible', 'eur', 'euse', 'ant', 'ent'];
   
   for (const ending of endings) {
     if (word.length > ending.length + 2 && word.endsWith(ending)) {
@@ -73,7 +53,6 @@ function frenchStem(word) {
     }
   }
   
-  // Pluriels simples
   if (word.endsWith('s') && word.length > 3) {
     return word.slice(0, -1);
   }
@@ -104,179 +83,67 @@ function tokenize(s) {
   return expandWithSynonyms(baseTokens);
 }
 
-// ============ TF-IDF SCORING ============
-function calculateTfIdf(blocks) {
-  const docCount = blocks.length;
-  const termFreqs = new Map();
-  const docFreqs = new Map();
-  
-  // Calcul des fréquences
-  blocks.forEach((block, idx) => {
-    const text = `${block.title} ${block.body} ${(block.synonyms || []).join(' ')}`;
-    const tokens = tokenize(text);
-    const docTermFreq = new Map();
-    
-    tokens.forEach(token => {
-      docTermFreq.set(token, (docTermFreq.get(token) || 0) + 1);
-    });
-    
-    // TF pour ce document
-    const maxFreq = Math.max(...docTermFreq.values());
-    const tf = new Map();
-    for (const [term, freq] of docTermFreq) {
-      tf.set(term, 0.5 + 0.5 * (freq / maxFreq));
-    }
-    
-    termFreqs.set(idx, tf);
-    
-    // DF global
-    for (const term of docTermFreq.keys()) {
-      docFreqs.set(term, (docFreqs.get(term) || 0) + 1);
-    }
-  });
-  
-  return { termFreqs, docFreqs, docCount };
-}
-
-function scoreBlockAdvanced(block, blockIdx, queryTokens, tfidfData) {
-  const { termFreqs, docFreqs, docCount } = tfidfData;
-  const blockTf = termFreqs.get(blockIdx) || new Map();
+// ============ SCORING SIMPLE MAIS EFFICACE ============
+function scoreBlockSimple(block, queryTokens) {
+  const blockTokens = tokenize(block.title + ' ' + block.body + ' ' + (block.synonyms || []).join(' '));
   
   let score = 0;
-  let totalQueryWeight = 0;
-  
   for (const queryToken of queryTokens) {
-    const tf = blockTf.get(queryToken) || 0;
-    const df = docFreqs.get(queryToken) || 1;
-    const idf = Math.log(docCount / df);
-    const tfidf = tf * idf;
-    
-    score += tfidf;
-    totalQueryWeight += idf;
+    if (blockTokens.includes(queryToken)) {
+      score += 1;
+    }
   }
   
-  // Normalisation par la longueur de la requête
-  const normalizedScore = totalQueryWeight > 0 ? score / totalQueryWeight : 0;
-  
-  // Bonus pour les correspondances exactes dans le titre
+  // Bonus titre
   const titleTokens = tokenize(block.title);
   const titleMatches = queryTokens.filter(qt => titleTokens.includes(qt)).length;
-  const titleBonus = titleMatches * 0.5;
+  score += titleMatches * 1.5;
   
-  // Bonus pour les synonymes
+  // Bonus synonymes
   const synTokens = tokenize((block.synonyms || []).join(' '));
   const synMatches = queryTokens.filter(qt => synTokens.includes(qt)).length;
-  const synBonus = synMatches * 0.3;
+  score += synMatches * 1.2;
   
-  return normalizedScore + titleBonus + synBonus;
+  return score + (block.priority || 5) * 0.1;
 }
 
-// ============ CLASSIFICATION TECHNIQUE PRÉCISE ============
+// ============ CLASSIFICATION ============
 function classifyAdvanced(text) {
   const txt = normalize(text);
-  const tokens = tokenize(txt);
   
-  // Vraies urgences (rares)
-  if (/surchauffe|voyant.*rouge.*moteur|fumée.*blanche.*épaisse|perte.*totale.*puissance/i.test(txt)) {
-    return { type: 'URGENCE_REELLE', confidence: 10, priority: 'CRITICAL', symptoms: ['urgence'] };
+  // Vraie urgence
+  if (/surchauffe|voyant.*rouge.*moteur/i.test(txt)) {
+    return { type: 'URGENCE_REELLE', confidence: 10 };
   }
   
-  // Comptage des symptômes FAP
-  const fapSymptoms = [];
+  // Symptômes FAP
+  const symptoms = [];
+  if (/voyant.*clignotant|clignotant.*voyant|clignote/i.test(txt)) symptoms.push('clignotant');
+  if (/voyant|témoin/i.test(txt)) symptoms.push('voyant');
+  if (/perte.*puissance|baisse.*puissance/i.test(txt)) symptoms.push('puissance');
+  if (/fumée.*noire/i.test(txt)) symptoms.push('fumee');
+  if (/saturé|encrassé|colmaté/i.test(txt)) symptoms.push('sature');
   
-  if (/voyant.*fap|fap.*voyant|témoin.*fap/i.test(txt)) fapSymptoms.push('voyant');
-  if (/voyant.*clignotant|clignotant.*voyant|voyant.*clignote|clignote/i.test(txt)) fapSymptoms.push('clignotant');
-  if (/perte.*puissance|baisse.*puissance|puissance.*faible|moins.*puissant/i.test(txt)) fapSymptoms.push('puissance');
-  if (/fumée.*noire|fumées.*noires|échappement.*noir/i.test(txt)) fapSymptoms.push('fumee');
-  if (/saturé|encrassé|colmaté|bouché|obstrué/i.test(txt)) fapSymptoms.push('sature');
-  if (/surconsommation|consomme.*plus/i.test(txt)) fapSymptoms.push('conso');
-  if (/odeur.*âcre|odeur.*forte/i.test(txt)) fapSymptoms.push('odeur');
-  if (/régime.*instable|moteur.*instable/i.test(txt)) fapSymptoms.push('instable');
-  
-  const symptomCount = fapSymptoms.length;
-  
-  // Classification selon les symptômes
-  if (fapSymptoms.includes('clignotant')) {
-    return { 
-      type: 'FAP_CLIGNOTANT', 
-      confidence: 9, 
-      priority: 'HIGH', 
-      symptoms: fapSymptoms,
-      symptomCount 
-    };
+  if (symptoms.includes('clignotant')) {
+    return { type: 'FAP_CLIGNOTANT', confidence: 9, symptoms };
   }
   
-  if (symptomCount >= 2) {
-    return { 
-      type: 'FAP_MULTI', 
-      confidence: 8, 
-      priority: 'HIGH', 
-      symptoms: fapSymptoms,
-      symptomCount 
-    };
+  if (symptoms.length >= 2) {
+    return { type: 'FAP_MULTI', confidence: 8, symptoms };
   }
   
-  if (symptomCount === 1 || /\b(fap|dpf)\b|filtre.*particule/i.test(txt)) {
-    return { 
-      type: 'FAP_SINGLE', 
-      confidence: 6, 
-      priority: 'MEDIUM', 
-      symptoms: fapSymptoms,
-      symptomCount 
-    };
+  if (symptoms.length === 1 || /\b(fap|dpf)\b/i.test(txt)) {
+    return { type: 'FAP_SINGLE', confidence: 6, symptoms };
   }
   
-  // Autres problèmes
-  if (/\begr\b|vanne.*egr|recirculation.*gaz/i.test(txt)) {
-    return { type: 'EGR', confidence: 4, priority: 'LOW', symptoms: [], symptomCount: 0 };
-  }
-  
-  if (/\badblue\b|niveau.*adblue|def\b/i.test(txt)) {
-    return { type: 'ADBLUE', confidence: 3, priority: 'LOW', symptoms: [], symptomCount: 0 };
-  }
-  
-  if (/diagnostic|contrôle|garage|rdv/i.test(txt)) {
-    return { type: 'DIAG', confidence: 2, priority: 'LOW', symptoms: [], symptomCount: 0 };
-  }
-  
-  return { type: 'GEN', confidence: 0, priority: 'LOW', symptoms: [], symptomCount: 0 };
+  return { type: 'GEN', confidence: 0, symptoms: [] };
 }
 
-// ============ DÉTECTION PREMIÈRE INTERACTION ============
 function isFirstInteraction(historique) {
-  if (!historique) return true;
-  const hist = normalize(historique);
-  return hist.length < 50 || !hist.includes('autoai:');
+  return !historique || historique.length < 50;
 }
 
-// ============ SYSTÈME DE CACHE ============
-function getCacheKey(question, historique) {
-  return `${normalize(question)}_${normalize(historique || '')}`;
-}
-
-function getCachedResponse(key) {
-  const cached = queryCache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
-  }
-  queryCache.delete(key);
-  return null;
-}
-
-function setCachedResponse(key, data) {
-  if (queryCache.size >= MAX_CACHE_SIZE) {
-    // Supprime les entrées les plus anciennes
-    const oldestKey = Array.from(queryCache.keys())[0];
-    queryCache.delete(oldestKey);
-  }
-  
-  queryCache.set(key, {
-    data,
-    timestamp: Date.now()
-  });
-}
-
-// ============ PARSING AMÉLIORÉ ============
+// ============ PARSING ============
 function parseBlocks(raw) {
   const parts = raw.split(/\n(?=\[[^\]]*\]\s*)/g);
   return parts.map(p => {
@@ -286,29 +153,19 @@ function parseBlocks(raw) {
     const title = m[1] || '';
     const body = (m[2] || '').trim();
     
-    // Extraction des synonymes
     const synLine = body.match(/^Synonymes:\s*(.+)$/mi);
     const synonyms = synLine ? 
       synLine[1].split(/[,|]/).map(s => s.trim()).filter(Boolean) : [];
     
-    // Extraction des mots-clés
-    const keywordLine = body.match(/^Mots-clés:\s*(.+)$/mi);
-    const keywords = keywordLine ? 
-      keywordLine[1].split(/[,|]/).map(s => s.trim()).filter(Boolean) : [];
-    
-    // Calcul de priorité basé sur le titre
-    const priority = title.includes('URGENCE') ? 10 :
-                    title.includes('EMPATHIQUE') ? 9 :
+    const priority = title.includes('EMPATHIQUE') ? 9 :
                     title.includes('CLIGNOTANT') ? 9 :
                     title.includes('FAP') ? 8 :
-                    title.includes('SYMPTÔMES') ? 7 :
-                    title.includes('SERVICES') ? 6 : 5;
+                    title.includes('SYMPTÔMES') ? 7 : 5;
     
     return { 
       title, 
       body: body.replace(/^(Synonymes|Mots-clés):\s*.+$/gmi, '').trim(), 
-      synonyms, 
-      keywords,
+      synonyms,
       priority
     };
   }).filter(Boolean);
@@ -329,133 +186,73 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Question invalide' });
   }
 
-  // Vérification du cache
-  const cacheKey = getCacheKey(question, historique);
-  const cachedResponse = getCachedResponse(cacheKey);
-  if (cachedResponse) {
-    return res.status(200).json({
-      ...cachedResponse,
-      cached: true
-    });
-  }
-
-  // Chargement des données avec cache
+  // Chargement des données
   let raw;
-  if (!dataCache || Date.now() - dataCache.timestamp > CACHE_DURATION) {
-    try {
-      const fileContent = fs.readFileSync(path.join(process.cwd(), 'data', 'data.txt'), 'utf-8');
-      dataCache = {
-        content: fileContent,
-        timestamp: Date.now()
-      };
-    } catch {
-      return res.status(500).json({ error: 'Erreur de lecture des données' });
-    }
+  try {
+    raw = fs.readFileSync(path.join(process.cwd(), 'data', 'data.txt'), 'utf-8');
+  } catch {
+    return res.status(500).json({ error: 'Erreur de lecture des données' });
   }
-  raw = dataCache.content;
 
-  // Parsing des blocs avec cache
-  if (!blocksCache || Date.now() - blocksCache.timestamp > CACHE_DURATION) {
-    const blocks = parseBlocks(raw);
-    const tfidfData = calculateTfIdf(blocks);
-    blocksCache = {
-      blocks,
-      tfidfData,
-      timestamp: Date.now()
-    };
-  }
+  const blocks = parseBlocks(raw);
+  const queryTokens = tokenize(historique + ' ' + question);
   
-  const { blocks, tfidfData } = blocksCache;
-  const queryTokens = tokenize(`${historique || ''} ${question}`);
-  
-  // Scoring avancé et ranking
   const ranked = blocks
-    .map((b, idx) => ({ 
-      b, 
-      s: scoreBlockAdvanced(b, idx, queryTokens, tfidfData),
-      priority: b.priority
-    }))
-    .sort((a, b) => (b.s + b.priority * 0.1) - (a.s + a.priority * 0.1))
+    .map(b => ({ b, s: scoreBlockSimple(b, queryTokens) }))
+    .sort((a, b) => b.s - a.s)
     .slice(0, 3)
     .map(x => x.b);
 
   const contextText = ranked.length
-    ? ranked.map(b => `[${b.title}]\n${b.body}`).join('\n\n')
+    ? ranked.map(b => '[' + b.title + ']\n' + b.body).join('\n\n')
     : "Utilise tes connaissances sur les FAP.";
 
-  // Classification avancée et détection première interaction
   const classification = classifyAdvanced(question);
   const isFirst = isFirstInteraction(historique);
 
-  // Construction du prompt système avec correction syntaxe
-  let toneInstructions = '';
-  if (isFirst) {
-    toneInstructions = 'EMPATHIQUE: Rassurez le client, expliquez brièvement le problème. PÉDAGOGIQUE: Expliquez ce qu\'est un FAP.';
-  } else {
-    toneInstructions = 'CONCIS: Réponses courtes et directes vers la solution.';
-  }
+  // Construction du prompt - VERSION SIMPLE
+  const modeResponse = isFirst ? 'EMPATHIQUE (100 mots max)' : 'CONCIS (80 mots max strictement)';
+  const toneInstr = isFirst ? 
+    'Réponse empathique et pédagogique. Expliquez ce qu\'est un FAP.' :
+    'Réponse concise et directe vers la solution.';
 
-  const system = `Tu es l'assistant Re-Fap, expert en nettoyage de filtres à particules (FAP).
+  const system = 'Tu es l\'assistant Re-Fap, expert en nettoyage de filtres à particules.\n\n' +
+    'CONTEXTE: ' + classification.type + ' | Première interaction: ' + isFirst + '\n\n' +
+    'DÉLAIS RÉELS OBLIGATOIRES :\n' +
+    '- Carter-Cash équipé : 4 heures, 99-149€\n' +
+    '- Carter-Cash non équipé : 48 heures, 199€ port compris\n' +
+    '- Garage partenaire : 48 heures, 99-149€ + main d\'œuvre\n\n' +
+    'MODE: ' + modeResponse + '\n\n' +
+    'LOGIQUE :\n' +
+    '1. VOYANT CLIGNOTANT : Mode dégradé, évitez longs trajets, question démontage\n' +
+    '2. SYMPTÔMES MULTIPLES : FAP saturé, question démontage directe\n' +
+    '3. CLIENT NE PEUT PAS : "Garage partenaire : démontage, nettoyage, remontage en 48h pour 99-149€ + main d\'œuvre. Cliquez sur Trouver un garage partenaire."\n' +
+    '4. CLIENT PEUT : "Carter-Cash équipé 4h (99-149€) ou autres 48h (199€). Cliquez sur Trouver un Carter-Cash."\n\n' +
+    'TONE: ' + toneInstr + '\n\n' +
+    'INTERDICTIONS :\n' +
+    '- Jamais inventer délais (ex: "1-2 heures")\n' +
+    '- Jamais dépasser 80 mots après première interaction\n' +
+    '- Utiliser uniquement délais des données\n' +
+    '- Pas d\'emojis, pas de listes à puces';
 
-[CONTEXTE: ${classification.type} | Confiance: ${classification.confidence} | Première interaction: ${isFirst}]
-
-DÉLAIS RÉELS OBLIGATOIRES (NE JAMAIS INVENTER) :
-- Carter-Cash équipé : 4 heures, 99-149€
-- Carter-Cash non équipé : 48 heures, 199€ port compris  
-- Garage partenaire : 48 heures, 99-149€ + main d'œuvre
-
-RÈGLE ABSOLUE : UTILISER UNIQUEMENT LES INFORMATIONS DES DONNÉES. JAMAIS INVENTER.
-
-MODE DE RÉPONSE: ${isFirst ? 'EMPATHIQUE (100 mots max)' : 'CONCIS ET DIRECT (80 mots max strictement)'}
-
-LOGIQUE TECHNIQUE :
-
-1. VOYANT CLIGNOTANT : Mode dégradé, évitez longs trajets, question démontage
-
-2. SYMPTÔMES MULTIPLES : FAP saturé confirmé, question démontage directe  
-
-3. CLIENT NE PEUT PAS DÉMONTER : 
-   "Nos garages partenaires s'occupent de tout : démontage, nettoyage haute pression et remontage en 48h pour 99-149€ plus main d'œuvre. Cliquez sur Trouver un garage partenaire."
-
-4. CLIENT PEUT DÉMONTER : 
-   "Carter-Cash équipé nettoie en 4h (99-149€) ou autres en 48h (199€ port compris). Cliquez sur Trouver un Carter-Cash."
-
-TONE: ${toneInstructions}
-
-INTERDICTIONS STRICTES :
-- Jamais inventer de délais (ex: "1-2 heures")
-- Jamais dépasser 80 mots après première interaction
-- Toujours utiliser les délais exacts des données
-- Jamais d'informations non présentes dans le contexte
-- Pas d'emojis, pas de listes à puces`;
-
-  const userContent = `Historique: ${historique || '(Première interaction)'}
-Question: ${question}
-Classification: ${classification.type}
-Symptômes détectés: ${classification.symptoms?.join(', ') || 'aucun'}
-Première interaction: ${isFirst}
-
-Contexte technique: ${contextText}
-
-ANALYSE:
-- Si première interaction ET symptômes FAP détectés → réponse empathique et pédagogique
-- Si suite de conversation → réponse concise et directe
-- Voyant clignotant = mode dégradé, pas urgence d'arrêt
-- Symptômes multiples → solution directe
-- Fin de conversation sur "merci/ok" → "Avec plaisir. Bonne journée !"`;
+  const userContent = 'Historique: ' + (historique || '(Première interaction)') + '\n' +
+    'Question: ' + question + '\n' +
+    'Classification: ' + classification.type + '\n' +
+    'Première interaction: ' + isFirst + '\n\n' +
+    'Contexte: ' + contextText;
 
   try {
     const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.MISTRAL_API_KEY}`,
+        "Authorization": "Bearer " + process.env.MISTRAL_API_KEY,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: "mistral-medium-latest",
-        temperature: isFirst ? 0.3 : 0.1,  // Plus de variabilité pour l'empathie
-        top_p: isFirst ? 0.8 : 0.6,
-        max_tokens: isFirst ? 250 : 150,    // Plus de place pour l'empathie
+        temperature: isFirst ? 0.3 : 0.1,
+        top_p: 0.6,
+        max_tokens: isFirst ? 200 : 120,
         messages: [
           { role: "system", content: system },
           { role: "user", content: userContent }
@@ -465,34 +262,26 @@ ANALYSE:
 
     if (!r.ok) {
       const fallbackMessage = isFirst 
-        ? `Bonjour ! Je comprends votre inquiétude concernant votre véhicule. Un FAP (filtre à particules) capture les particules des moteurs diesel. Quand il s'encrasse, cela cause les symptômes que vous décrivez. Notre nettoyage évite le remplacement coûteux. Quel symptôme observez-vous exactement ?`
-        : `Problème de FAP détecté. Quel symptôme observez-vous : voyant allumé, perte de puissance ou fumée noire ?`;
+        ? "Bonjour ! Je comprends votre inquiétude. Un FAP capture les particules diesel et s'encrasse avec le temps. Notre nettoyage évite le remplacement coûteux. Quel symptôme observez-vous exactement ?"
+        : "Problème de FAP détecté. Quel symptôme observez-vous : voyant allumé, perte de puissance ou fumée noire ?";
       
       return res.status(200).json({ 
         reply: fallbackMessage, 
-        nextAction: classification,
-        debug: {
-          queryTokens: queryTokens.slice(0, 5),
-          topBlocks: ranked.map(b => ({ title: b.title, score: 'N/A' }))
-        }
+        nextAction: classification
       });
     }
 
     const data = await r.json();
-    const reply = (data.choices?.[0]?.message?.content || '').trim();
+    const reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
     
     if (!reply) {
       const defaultReply = isFirst
-        ? `Bonjour ! Je vois que vous avez un souci avec votre véhicule. Décrivez-moi ce qui vous préoccupe et je vous aiderai à identifier s'il s'agit d'un problème de FAP.`
-        : `Problème détecté. Décrivez vos symptômes pour que je puisse vous orienter.`;
+        ? "Bonjour ! Je vois que vous avez un souci avec votre véhicule. Décrivez-moi ce qui vous préoccupe."
+        : "Problème détecté. Décrivez vos symptômes.";
       
       return res.status(200).json({ 
         reply: defaultReply, 
-        nextAction: classification,
-        debug: {
-          queryTokens: queryTokens.slice(0, 5),
-          isFirst: isFirst
-        }
+        nextAction: classification
       });
     }
 
@@ -500,16 +289,12 @@ ANALYSE:
       reply, 
       nextAction: classification,
       debug: process.env.NODE_ENV === 'development' ? {
-        queryTokens: queryTokens.slice(0, 10),
-        topBlocks: ranked.map(b => ({ title: b.title, priority: b.priority })),
+        queryTokens: queryTokens.slice(0, 5),
+        topBlocks: ranked.map(b => ({ title: b.title })),
         classification: classification,
-        isFirstInteraction: isFirst,
-        cached: false
+        isFirstInteraction: isFirst
       } : undefined
     };
-
-    // Mise en cache de la réponse
-    setCachedResponse(cacheKey, response);
 
     return res.status(200).json(response);
 
@@ -517,16 +302,12 @@ ANALYSE:
     console.error('Erreur API:', error);
     
     const backupMessage = isFirst
-      ? `Bonjour ! Notre système rencontre une difficulté technique temporaire. Cependant, je peux déjà vous dire que la plupart des problèmes de moteur diesel sont liés au FAP. Décrivez-moi vos symptômes.`
-      : `Problème technique temporaire. Décrivez vos symptômes FAP.`;
+      ? "Bonjour ! Problème technique temporaire. Décrivez-moi vos symptômes de FAP."
+      : "Problème technique temporaire. Décrivez vos symptômes FAP.";
     
     return res.status(200).json({ 
       reply: backupMessage, 
-      nextAction: classification,
-      debug: {
-        error: 'API Error',
-        isFirst: isFirst
-      }
+      nextAction: classification
     });
   }
 }
