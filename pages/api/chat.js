@@ -64,7 +64,7 @@ function frenchStem(word) {
   // Stemming français basique mais efficace
   const endings = [
     'ment', 'tion', 'sion', 'ance', 'ence', 'able', 'ible', 'ique', 'oire',
-    'eur', 'euse', 'ant', 'ent', 'age', 'age', 'aire', 'aux', 'eau', 'eaux'
+    'eur', 'euse', 'ant', 'ent', 'age', 'aire', 'aux', 'eau', 'eaux'
   ];
   
   for (const ending of endings) {
@@ -171,64 +171,82 @@ function scoreBlockAdvanced(block, blockIdx, queryTokens, tfidfData) {
   return normalizedScore + titleBonus + synBonus;
 }
 
-// ============ CLASSIFICATION PROBABILISTE ============
+// ============ CLASSIFICATION TECHNIQUE PRÉCISE ============
 function classifyAdvanced(text) {
   const txt = normalize(text);
   const tokens = tokenize(txt);
   
-  const patterns = {
-    URGENT: {
-      keywords: ['voyant', 'clignotant', 'urgent', 'arrêt', 'immédiat', 'danger', 'problème'],
-      regex: /voyant.*clignotant|urgent|arrêt.*immédiat|danger/,
-      weight: 3.0
-    },
-    FAP: {
-      keywords: ['fap', 'dpf', 'filtre', 'particule', 'saturé', 'encrassé', 'colmaté'],
-      regex: /\bfap\b|\bdpf\b|\bfiltre.*particule|saturé|encrassé|colmaté/,
-      weight: 2.0
-    },
-    EGR: {
-      keywords: ['egr', 'vanne', 'recirculation', 'gaz'],
-      regex: /\begr\b|vanne.*egr|recirculation.*gaz/,
-      weight: 1.8
-    },
-    ADBLUE: {
-      keywords: ['adblue', 'niveau', 'def'],
-      regex: /\badblue\b|niveau.*adblue|def\b/,
-      weight: 1.5
-    },
-    DIAG: {
-      keywords: ['diagnostic', 'diag', 'rdv', 'rendez', 'vous', 'garage', 'partenaire', 'carter', 'cash'],
-      regex: /\bdiag(nostic)?\b|\brdv\b|\brendez.?vous|garage.*partenaire|carter.*cash/,
-      weight: 1.2
-    }
-  };
-  
-  const scores = {};
-  
-  for (const [type, config] of Object.entries(patterns)) {
-    let score = 0;
-    
-    // Score basé sur les mots-clés
-    const keywordMatches = tokens.filter(t => config.keywords.includes(t)).length;
-    score += keywordMatches * config.weight;
-    
-    // Score basé sur les regex
-    if (config.regex.test(txt)) {
-      score += config.weight * 1.5;
-    }
-    
-    scores[type] = score;
+  // Vraies urgences (rares)
+  if (/surchauffe|voyant.*rouge.*moteur|fumée.*blanche.*épaisse|perte.*totale.*puissance/i.test(txt)) {
+    return { type: 'URGENCE_REELLE', confidence: 10, priority: 'CRITICAL', symptoms: ['urgence'] };
   }
   
-  // Retourne le type avec le score le plus élevé
-  const maxScore = Math.max(...Object.values(scores));
-  if (maxScore > 0) {
-    const bestType = Object.entries(scores).find(([, score]) => score === maxScore)?.[0];
-    return { type: bestType, confidence: maxScore, scores };
+  // Comptage des symptômes FAP
+  const fapSymptoms = [];
+  
+  if (/voyant.*fap|fap.*voyant|témoin.*fap/i.test(txt)) fapSymptoms.push('voyant');
+  if (/voyant.*clignotant|clignotant.*voyant|voyant.*clignote|clignote/i.test(txt)) fapSymptoms.push('clignotant');
+  if (/perte.*puissance|baisse.*puissance|puissance.*faible|moins.*puissant/i.test(txt)) fapSymptoms.push('puissance');
+  if (/fumée.*noire|fumées.*noires|échappement.*noir/i.test(txt)) fapSymptoms.push('fumee');
+  if (/saturé|encrassé|colmaté|bouché|obstrué/i.test(txt)) fapSymptoms.push('sature');
+  if (/surconsommation|consomme.*plus/i.test(txt)) fapSymptoms.push('conso');
+  if (/odeur.*âcre|odeur.*forte/i.test(txt)) fapSymptoms.push('odeur');
+  if (/régime.*instable|moteur.*instable/i.test(txt)) fapSymptoms.push('instable');
+  
+  const symptomCount = fapSymptoms.length;
+  
+  // Classification selon les symptômes
+  if (fapSymptoms.includes('clignotant')) {
+    return { 
+      type: 'FAP_CLIGNOTANT', 
+      confidence: 9, 
+      priority: 'HIGH', 
+      symptoms: fapSymptoms,
+      symptomCount 
+    };
   }
   
-  return { type: 'GEN', confidence: 0, scores };
+  if (symptomCount >= 2) {
+    return { 
+      type: 'FAP_MULTI', 
+      confidence: 8, 
+      priority: 'HIGH', 
+      symptoms: fapSymptoms,
+      symptomCount 
+    };
+  }
+  
+  if (symptomCount === 1 || /\b(fap|dpf)\b|filtre.*particule/i.test(txt)) {
+    return { 
+      type: 'FAP_SINGLE', 
+      confidence: 6, 
+      priority: 'MEDIUM', 
+      symptoms: fapSymptoms,
+      symptomCount 
+    };
+  }
+  
+  // Autres problèmes
+  if (/\begr\b|vanne.*egr|recirculation.*gaz/i.test(txt)) {
+    return { type: 'EGR', confidence: 4, priority: 'LOW', symptoms: [], symptomCount: 0 };
+  }
+  
+  if (/\badblue\b|niveau.*adblue|def\b/i.test(txt)) {
+    return { type: 'ADBLUE', confidence: 3, priority: 'LOW', symptoms: [], symptomCount: 0 };
+  }
+  
+  if (/diagnostic|contrôle|garage|rdv/i.test(txt)) {
+    return { type: 'DIAG', confidence: 2, priority: 'LOW', symptoms: [], symptomCount: 0 };
+  }
+  
+  return { type: 'GEN', confidence: 0, priority: 'LOW', symptoms: [], symptomCount: 0 };
+}
+
+// ============ DÉTECTION PREMIÈRE INTERACTION ============
+function isFirstInteraction(historique) {
+  if (!historique) return true;
+  const hist = normalize(historique);
+  return hist.length < 50 || !hist.includes('autoai:');
 }
 
 // ============ SYSTÈME DE CACHE ============
@@ -279,7 +297,9 @@ function parseBlocks(raw) {
       keywordLine[1].split(/[,|]/).map(s => s.trim()).filter(Boolean) : [];
     
     // Calcul de priorité basé sur le titre
-    const priority = title.includes('URGENT') ? 10 :
+    const priority = title.includes('URGENCE') ? 10 :
+                    title.includes('EMPATHIQUE') ? 9 :
+                    title.includes('CLIGNOTANT') ? 9 :
                     title.includes('FAP') ? 8 :
                     title.includes('SYMPTÔMES') ? 7 :
                     title.includes('SERVICES') ? 6 : 5;
@@ -363,68 +383,72 @@ export default async function handler(req, res) {
     ? ranked.map(b => `[${b.title}]\n${b.body}`).join('\n\n')
     : "Utilise tes connaissances sur les FAP.";
 
-  // Classification avancée
+  // Classification avancée et détection première interaction
   const classification = classifyAdvanced(question);
+  const isFirst = isFirstInteraction(historique);
 
-  // Prompt système (identique à l'original mais avec informations enrichies)
+  // Prompt système adaptatif selon le contexte
   const system = `
-Tu es l'assistant Re-Fap, UNIQUEMENT expert en nettoyage de filtres à particules (FAP).
+Tu es l'assistant Re-Fap, expert en nettoyage de filtres à particules (FAP).
 
-[CONTEXTE DÉTECTÉ: ${classification.type} - Confiance: ${classification.confidence.toFixed(2)}]
+[CONTEXTE: ${classification.type} | Confiance: ${classification.confidence} | Première interaction: ${isFirst}]
+[SYMPTÔMES DÉTECTÉS: ${classification.symptoms?.join(', ') || 'aucun'} (${classification.symptomCount || 0})]
 
-RÈGLE ABSOLUE #1 : JAMAIS DE QUESTION APRÈS AVOIR DONNÉ LA SOLUTION
-Une fois que tu as dirigé vers un bouton (Carter-Cash ou garage partenaire), tu NE POSES PLUS de question.
+MODE DE RÉPONSE:
+${isFirst ? 'EMPATHIQUE & PÉDAGOGIQUE - Première interaction' : 'CONCIS & DIRECT - Suite de conversation'}
 
-RÈGLE ABSOLUE #2 : GESTION FIN DE CONVERSATION
-Si le client dit "merci", "ok", "d'accord", "super", "parfait" APRÈS avoir reçu la solution :
-- Répondre UNIQUEMENT : "Avec plaisir. Bonne journée !"
-- JAMAIS répéter la solution déjà donnée
-- JAMAIS réexpliquer ce qui a déjà été dit
-- JAMAIS insister après un "merci" ou "ok"
+LOGIQUE TECHNIQUE PRÉCISE:
 
-APPROCHE COMMERCIALE (toujours respectueuse) :
-- Valoriser le réseau de garages partenaires
-- Mentionner : diagnostic précis, solution économique, proximité, rapidité
-- Rappeler : "2 clics pour un RDV"
-- Philosophie : "le bon diagnostic pour la bonne réparation au meilleur prix"
-- Toujours orienter vers une action (cliquer sur le bouton)
+1. VRAIE URGENCE (très rare):
+   Surchauffe moteur + voyant rouge moteur → "ARRÊT IMMÉDIAT nécessaire"
 
-DOMAINE STRICT :
-- Tu traites UNIQUEMENT les problèmes de FAP
-- Si problème non-FAP → diriger vers garage en valorisant leur expertise
+2. VOYANT FAP CLIGNOTANT:
+   "Voyant clignotant confirme un FAP saturé. Votre véhicule fonctionne en mode dégradé avec perte de puissance. Évitez les longs trajets. Pouvez-vous démonter le FAP vous-même ?"
 
-BOUTONS EXISTANTS (NE JAMAIS EN INVENTER) :
-- "Trouver un Carter-Cash"
-- "Trouver un garage partenaire"
-C'EST TOUT !
+3. SYMPTÔMES MULTIPLES (2+ symptômes FAP):
+   "Vos symptômes confirment un FAP saturé. Pouvez-vous le démonter vous-même ?"
 
-RÈGLES :
-1. Maximum 80 mots par réponse
-2. Pas d'emojis, pas de listes à puces
-3. Maximum 3 questions avant solution
-4. Une fois la solution donnée : STOP
-5. Toujours "?" à la fin des questions
+4. SYMPTÔME UNIQUE FAP:
+   Une question pour confirmer, puis solution
 
-INTERDICTIONS ABSOLUES :
-- Jamais d'emojis
-- Jamais de listes à puces dans les réponses
-- Jamais "Avez-vous d'autres questions"
-- Jamais inventer de boutons
-- Jamais dépasser 80 mots
-- Jamais dire "ultrason" (dire "haute pression")`;
+5. VOYANT FAP FIXE SEUL:
+   "Voyant fixe indique un début d'encrassement. Avez-vous aussi une perte de puissance ?"
+
+TONE:
+${isFirst ? 
+`EMPATHIQUE: Rassurez le client, expliquez simplement le problème, montrez la compréhension.
+PÉDAGOGIQUE: Expliquez brièvement ce qu'est un FAP et pourquoi il s'encrasse.` :
+`CONCIS: Réponses courtes et directes.
+PRATIQUE: Allez droit au but vers la solution.`}
+
+SOLUTIONS FINALES:
+- Peut démonter: "Carter-Cash équipé nettoie en 4h (99-149€) ou autres en 48h (199€ port compris). Cliquez sur Trouver un Carter-Cash."
+- Ne peut pas: "Garage partenaire pour diagnostic complet et nettoyage (99-149€ + main d'œuvre). Cliquez sur Trouver un garage partenaire."
+- Non-FAP: "Diagnostic par garage partenaire recommandé. Cliquez sur Trouver un garage partenaire."
+
+RÈGLES:
+- Maximum 80 mots (sauf première interaction empathique: 100 mots max)
+- Pas d'emojis, pas de listes à puces
+- Maximum 2 questions avant solution
+- Fin après solution donnée
+`;
 
   const userContent = `
-Historique : ${historique || '(Première interaction)'}
-Question : ${question}
-Classification détectée : ${classification.type} (confiance: ${classification.confidence.toFixed(2)})
+Historique: ${historique || '(Première interaction)'}
+Question: ${question}
+Classification: ${classification.type}
+Symptômes détectés: ${classification.symptoms?.join(', ') || 'aucun'}
+Première interaction: ${isFirst}
 
-Contexte : ${contextText}
+Contexte technique: ${contextText}
 
-ANALYSE :
-- Si "merci" ou "ok" dans l'historique après solution → réponse de clôture minimale
-- Si problème non-FAP → réponse commerciale valorisant les garages
-- Si "FAP aussi" → revenir au diagnostic FAP
-- Une fois solution donnée → ARRÊT TOTAL`;
+ANALYSE:
+- Si première interaction ET symptômes FAP détectés → réponse empathique et pédagogique
+- Si suite de conversation → réponse concise et directe
+- Voyant clignotant = mode dégradé, pas urgence d'arrêt
+- Symptômes multiples → solution directe
+- Fin de conversation sur "merci/ok" → "Avec plaisir. Bonne journée !"
+`;
 
   try {
     const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -435,9 +459,9 @@ ANALYSE :
       },
       body: JSON.stringify({
         model: "mistral-medium-latest",
-        temperature: 0.1,
-        top_p: 0.6,
-        max_tokens: 200,
+        temperature: isFirst ? 0.3 : 0.1,  // Plus de variabilité pour l'empathie
+        top_p: isFirst ? 0.8 : 0.6,
+        max_tokens: isFirst ? 250 : 150,    // Plus de place pour l'empathie
         messages: [
           { role: "system", content: system },
           { role: "user", content: userContent }
@@ -446,7 +470,9 @@ ANALYSE :
     });
 
     if (!r.ok) {
-      const fallbackMessage = `Bonjour. Un FAP encrassé empêche le moteur de respirer correctement. Notre nettoyage haute pression résout ce problème. Quel symptôme observez-vous : voyant allumé, perte de puissance ou fumée noire ?`;
+      const fallbackMessage = isFirst 
+        ? `Bonjour ! Je comprends votre inquiétude concernant votre véhicule. Un FAP (filtre à particules) est une pièce qui capture les particules des moteurs diesel. Quand il s'encrasse, cela cause les symptômes que vous décrivez. Heureusement, nous proposons un nettoyage efficace qui évite le remplacement coûteux. Quel symptôme observez-vous exactement ?`
+        : `Problème de FAP détecté. Quel symptôme observez-vous : voyant allumé, perte de puissance ou fumée noire ?`;
       
       return res.status(200).json({ 
         reply: fallbackMessage, 
@@ -462,14 +488,16 @@ ANALYSE :
     const reply = (data.choices?.[0]?.message?.content || '').trim();
     
     if (!reply) {
-      const defaultReply = `Bonjour. Problème de FAP détecté. Notre nettoyage haute pression restaure les performances pour 99€ minimum. Avez-vous un voyant FAP allumé ?`;
+      const defaultReply = isFirst
+        ? `Bonjour ! Je vois que vous avez un souci avec votre véhicule. Décrivez-moi ce qui vous préoccupe et je vous aiderai à identifier s'il s'agit d'un problème de FAP.`
+        : `Problème détecté. Décrivez vos symptômes pour que je puisse vous orienter.`;
       
       return res.status(200).json({ 
         reply: defaultReply, 
         nextAction: classification,
         debug: {
           queryTokens: queryTokens.slice(0, 5),
-          topBlocks: ranked.map(b => ({ title: b.title, score: 'N/A' }))
+          isFirst: isFirst
         }
       });
     }
@@ -481,6 +509,7 @@ ANALYSE :
         queryTokens: queryTokens.slice(0, 10),
         topBlocks: ranked.map(b => ({ title: b.title, priority: b.priority })),
         classification: classification,
+        isFirstInteraction: isFirst,
         cached: false
       } : undefined
     };
@@ -493,14 +522,16 @@ ANALYSE :
   } catch (error) {
     console.error('Erreur API:', error);
     
-    const backupMessage = `Problème de FAP détecté. Notre service est disponible partout en France. Avez-vous un voyant FAP allumé ?`;
+    const backupMessage = isFirst
+      ? `Bonjour ! Notre système rencontre une difficulté technique temporaire. Cependant, je peux déjà vous dire que la plupart des problèmes de moteur diesel sont liés au FAP. Décrivez-moi vos symptômes.`
+      : `Problème technique temporaire. Décrivez vos symptômes FAP.`;
     
     return res.status(200).json({ 
       reply: backupMessage, 
       nextAction: classification,
       debug: {
         error: 'API Error',
-        queryTokens: queryTokens.slice(0, 5)
+        isFirst: isFirst
       }
     });
   }
