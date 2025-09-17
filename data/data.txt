@@ -3,6 +3,11 @@ Le nettoyage FAP proposé par Re-Fap coûte entre 99€ et 149€. Il évite un 
 Synonymes: filtre particules, dpf, nettoyage diesel, décrassage fap
 Mots-clés: prix, économie, performance, remplacement, coût
 
+[ACCUEIL EMPATHIQUE PREMIÈRE FOIS]
+"Bonjour ! Je comprends votre inquiétude concernant les symptômes de votre véhicule. C'est effectivement préoccupant quand on ne sait pas ce qui se passe. Un FAP (filtre à particules) est une pièce qui capture les particules polluantes des moteurs diesel. Quand il s'encrasse progressivement, il provoque les problèmes que vous décrivez. La bonne nouvelle, c'est que dans la majorité des cas, un simple nettoyage professionnel résout le problème et évite un remplacement coûteux. Pour bien vous orienter vers la solution adaptée, pouvez-vous me décrire précisément les symptômes que vous observez ?"
+Synonymes: accueil, bienvenue, première interaction, empathie, rassurance
+Mots-clés: bonjour, comprends, inquiétude, fap, filtre, particules, nettoyage, symptômes
+
 [SERVICES RE-FAP]
 TROIS OPTIONS DISPONIBLES :
 - Carter-Cash ÉQUIPÉ machine re-fap (machine sur place) : 4h, 99-149€
@@ -16,106 +21,114 @@ Synonymes: options, solutions, services, dépôt, enseigne, atelier
 Mots-clés: carter-cash, garage, partenaire, équipé, machine, haute pression
 
 [RÈGLES DE RÉPONSE]
-- Maximum 80 mots par réponse
+- Maximum 80 mots par réponse (100 mots pour première interaction empathique)
 - Pas d'emojis, jamais
 - Pas de listes à puces, uniquement paragraphes
 - Pas de question après avoir donné la solution
 - Toujours diriger vers bouton "Trouver un Carter-Cash" ou "Trouver un garage partenaire"
 
-[PREMIÈRE INTERACTION "FAP"]
-"Bonjour. Un FAP encrassé empêche votre moteur de bien respirer. Notre nettoyage haute pression résout ce problème pour 99€ minimum. Pour vous orienter, quel symptôme observez-vous : voyant allumé, perte de puissance ou fumée noire ?"
-Synonymes: salutation, accueil, premier contact, début conversation
-Mots-clés: bonjour, symptôme, voyant, puissance, fumée, orientation
+[VOYANT FAP CLIGNOTANT - MODE DÉGRADÉ]
+"Votre voyant FAP clignotant confirme que le filtre à particules est saturé. Votre véhicule fonctionne actuellement en mode dégradé, ce qui explique la perte de puissance ressentie. Il n'y a pas de danger immédiat, mais évitez les longs trajets et l'usage intensif. Le nettoyage professionnel Re-FAP résoudra ce problème. Êtes-vous en mesure de démonter vous-même le filtre à particules ?"
+Synonymes: clignotant, clignote, mode dégradé, saturé, colmaté
+Mots-clés: voyant, clignotant, saturé, mode, dégradé, puissance, démonter
 
-[VOYANT MOTEUR ALLUMÉ]
-Si voyant fixe : "C'est bon signe, probablement un simple encrassement."
-Si voyant clignotant : "Attention, voyant clignotant signifie urgence. Arrêtez le moteur immédiatement."
-
-Maximum 3 questions avant solution.
-Synonymes: témoin, lampe, indicateur, signal, alerte, warning
-Mots-clés: voyant, fixe, clignotant, urgence, arrêt, moteur
+[VOYANT FAP FIXE]
+"Un voyant FAP fixe indique généralement un début d'encrassement du filtre à particules. C'est le bon moment pour intervenir avant que le problème ne s'aggrave. Avez-vous aussi remarqué une perte de puissance ou une fumée noire à l'échappement ?"
+Synonymes: voyant fixe, témoin allumé, signal permanent
+Mots-clés: voyant, fixe, encrassement, puissance, fumée
 
 [SYMPTÔMES MULTIPLES FAP]
-"Votre FAP est clairement saturé. C'est comme un filtre complètement obstrué qui étouffe le moteur. Pouvez-vous démonter vous-même le filtre à particules ?"
+"D'après vos symptômes, votre FAP est clairement saturé. C'est comme un filtre complètement obstrué qui empêche le moteur de bien respirer. Il faut intervenir rapidement pour éviter d'endommager d'autres composants. Pouvez-vous démonter vous-même le filtre à particules ?"
 Synonymes: signes, problèmes, pannes, défauts, dysfonctionnements
 Mots-clés: saturé, obstrué, étouffe, démonter, filtre, particules
 
+[URGENCE RÉELLE - TRÈS RARE]
+"ATTENTION ! Surchauffe moteur détectée. Arrêtez immédiatement le véhicule et consultez un garage en urgence. Ce n'est plus un simple problème de FAP mais un risque de casse moteur."
+Synonymes: urgence, danger, critique, surchauffe, arrêt immédiat
+Mots-clés: surchauffe, voyant rouge, arrêt, immédiat, danger, casse moteur
+
 [ORIENTATION CLIENT PEUT DÉMONTER]
-"Parfait. Deux options avec votre FAP démonté : Carter-Cash équipé d'une machine re-fap nettoie en 4h pour 99-149€, ou autres Carter-Cash partout en France peut prendre en charge votre FAP en 48h pour 199€ port compris. Cliquez sur Trouver un Carter-Cash à côté de cette fenêtre pour localiser le plus proche."
+"Parfait ! Avec votre FAP démonté, vous avez deux options : Carter-Cash équipé d'une machine re-fap nettoie en 4 heures pour 99-149€, ou les autres Carter-Cash partout en France prennent en charge votre FAP en 48 heures pour 199€ port compris. Cliquez sur Trouver un Carter-Cash à côté de cette fenêtre pour localiser le plus proche."
 Synonymes: déposé, retiré, enlevé, sorti
 Mots-clés: démonté, carter-cash, équipé, machine, 4h, 48h, localiser
 
 [ORIENTATION CLIENT NE PEUT PAS DÉMONTER]
-"Nos garages partenaires s'occupent de tout : démontage, nettoyage haute pression et remontage en 48h pour 99-149€ plus main d'œuvre. Cliquez sur Trouver un garage partenaire à côté de cette fenêtre."
+"Nos garages partenaires s'occupent de tout : diagnostic précis, démontage professionnel, nettoyage haute pression Re-FAP et remontage complet en 48h pour 99-149€ plus main d'œuvre. Service clé en main avec garantie. Cliquez sur Trouver un garage partenaire à côté de cette fenêtre."
 Synonymes: incapable, impossible, pas possible, difficile
 Mots-clés: garage, partenaire, démontage, remontage, main d'œuvre
 
 [PROBLÈME NON-FAP]
-"Je suis spécialisé uniquement dans les problèmes de FAP. Pour un diagnostic de votre problème, nos garages partenaires disposent de l'équipement nécessaire. Cliquez sur Trouver un garage partenaire à côté de cette fenêtre."
+"Je suis spécialisé uniquement dans les problèmes de filtres à particules. Pour diagnostiquer votre problème avec précision, nos garages partenaires disposent de l'équipement professionnel nécessaire et peuvent identifier la cause exacte. Cliquez sur Trouver un garage partenaire à côté de cette fenêtre."
 Synonymes: autre panne, différent problème, pas fap, autre dysfonctionnement
 Mots-clés: spécialisé, diagnostic, équipement, partenaire
 
 [CLIENT DIT "PAS UN FAP"]
-"Compris. Pour diagnostiquer votre problème, un contrôle professionnel est nécessaire. Nos garages partenaires peuvent effectuer un diagnostic complet. Cliquez sur Trouver un garage partenaire à côté de cette fenêtre."
+"Compris ! Vous avez raison de vouloir un diagnostic précis. Nos garages partenaires peuvent effectuer un contrôle professionnel complet avec valise diagnostic pour identifier la cause exacte de vos symptômes. Cliquez sur Trouver un garage partenaire à côté de cette fenêtre."
 Synonymes: refuse, nie, conteste, pas d'accord
 Mots-clés: compris, diagnostic, contrôle, professionnel, complet
 
 [LIMITES DU NETTOYAGE]
-Nettoyage impossible si :
-- FAP cassé/fissuré ou monolithe fondu
-- Capteurs défaillants
-- Corrosion sévère
+Nettoyage Re-FAP impossible dans certains cas :
+- FAP cassé, fissuré ou monolithe fondu (dommage physique)
+- Capteurs de pression défaillants (problème électronique)
+- Corrosion sévère du boîtier (vieillissement extrême)
+Dans ces cas rares, le remplacement est nécessaire.
 Synonymes: restrictions, impossibilités, contre-indications
 Mots-clés: impossible, cassé, fissuré, fondu, capteurs, défaillants, corrosion
 
-[PROCESSUS]
-1. Identifier problème FAP
-2. Maximum 3 questions diagnostiques
-3. Donner solution appropriée
-4. Diriger vers bouton
-5. TERMINER (pas de question supplémentaire)
+[PROCESSUS DIAGNOSTIC RE-FAP]
+1. Identifier le problème FAP par les symptômes
+2. Maximum 2 questions pour confirmer le diagnostic
+3. Donner la solution appropriée selon la situation
+4. Diriger vers le bouton adapté (Carter-Cash ou garage)
+5. TERMINER la conversation (pas de question supplémentaire)
 Synonymes: étapes, procédure, méthode, déroulement
 Mots-clés: identifier, questions, solution, bouton, terminer
 
 [INTERDICTIONS ABSOLUES]
-- Jamais d'emojis
-- Jamais de listes à puces dans les réponses
-- Jamais "Avez-vous d'autres questions"
-- Jamais inventer de boutons
-- Jamais dépasser 80 mots
-- Jamais dire "ultrason" (dire "haute pression")
+- Jamais d'emojis dans les réponses
+- Jamais de listes à puces dans les réponses clients
+- Jamais "Avez-vous d'autres questions" en fin de réponse
+- Jamais inventer de nouveaux boutons
+- Jamais dépasser 80 mots (100 pour première interaction)
+- Jamais dire "ultrason" (toujours dire "haute pression")
 
-[SYMPTÔMES FAP ENCRASSÉ]
-Les signes d'un FAP saturé incluent : voyant FAP allumé, perte de puissance, surconsommation, fumée noire, odeur âcre, régime moteur instable.
+[SYMPTÔMES FAP ENCRASSÉ - GUIDE TECHNIQUE]
+Les signes révélateurs d'un FAP saturé incluent : voyant FAP allumé (fixe ou clignotant), perte de puissance notable, surconsommation de carburant, fumée noire à l'échappement, odeur âcre caractéristique, régime moteur instable au ralenti, difficultés de démarrage.
 Synonymes: signes, indicateurs, manifestations, problèmes
 Mots-clés: voyant, perte, puissance, surconsommation, fumée, odeur, régime, instable
 
-[URGENCE VOYANT CLIGNOTANT]
-Voyant FAP clignotant = DANGER IMMÉDIAT. Arrêtez le moteur immédiatement pour éviter la surchauffe et la casse moteur. Remorquage recommandé.
-Synonymes: alerte, urgence, danger, critique
-Mots-clés: clignotant, danger, arrêtez, immédiatement, surchauffe, casse, remorquage
-
 [DIFFÉRENCE FAP NEUF VS NETTOYÉ]
-Un FAP nettoyé Re-FAP retrouve 95% des performances d'origine. Économie de 800-1500€ vs neuf. Même garantie constructeur respectée.
+Un FAP nettoyé par le procédé Re-FAP retrouve 95% des performances d'origine. Économie substantielle de 800 à 1500€ par rapport au neuf. La garantie constructeur reste valable et le procédé est approuvé par les professionnels.
 Synonymes: comparaison, différence, opposition
 Mots-clés: neuf, nettoyé, performances, économie, garantie, constructeur
 
-[FRÉQUENCE NETTOYAGE]
-Un nettoyage FAP tous les 80 000-120 000 km selon utilisation. Conduite urbaine = encrassement plus rapide. Autoroute = moins d'encrassement.
+[FRÉQUENCE NETTOYAGE - CONSEIL PRÉVENTIF]
+Un nettoyage FAP est recommandé tous les 80 000 à 120 000 kilomètres selon votre type de conduite. Usage urbain fréquent = encrassement plus rapide. Conduite autoroutière régulière = encrassement plus lent.
 Synonymes: périodicité, récurrence, intervalle
 Mots-clés: fréquence, kilomètres, utilisation, urbaine, autoroute, encrassement
 
 [PRÉVENTION ENCRASSEMENT]
-Prévenir l'encrassement : rouler régulièrement sur autoroute 20 minutes à 3000 tpm, utiliser additif FAP, éviter trajets courts répétés.
+Pour prévenir l'encrassement FAP : roulez régulièrement sur autoroute 20 minutes à 3000 tours/minute pour déclencher la régénération naturelle, utilisez un additif FAP de qualité, évitez les trajets courts répétés qui empêchent la montée en température.
 Synonymes: éviter, prévenir, empêcher
-Mots-clés: prévention, autoroute, additif, trajets, courts
+Mots-clés: prévention, autoroute, additif, trajets, courts, régénération
 
-[DIAGNOSTIC PROFESSIONAL]
-Le diagnostic professionnel identifie : état du FAP, capteurs, sondes, EGR, turbo, injecteurs. Analyse complète 50-80€ remboursée si intervention.
+[DIAGNOSTIC PROFESSIONNEL - ANALYSE COMPLÈTE]
+Le diagnostic professionnel avec valise identifie précisément : état du FAP, fonctionnement des capteurs de pression, état des sondes de température, fonctionnement EGR, pression turbo, état des injecteurs. Analyse complète 50-80€ généralement remboursée si intervention acceptée.
 Synonymes: contrôle, vérification, analyse, expertise
 Mots-clés: diagnostic, capteurs, sondes, egr, turbo, injecteurs, analyse
 
-[GARANTIE RE-FAP]
-Garantie Re-FAP 1 an pièce et main d'œuvre. Valable dans tout le réseau. Conditions : respect procédure, pas de casse préexistante.
+[GARANTIE RE-FAP - SÉRÉNITÉ CLIENT]
+Garantie Re-FAP : 1 an pièce et main d'œuvre sur tous les nettoyages. Valable dans tout le réseau français. Conditions simples : respect de la procédure de nettoyage et absence de casse mécanique préexistante non détectée au diagnostic.
 Synonymes: assurance, protection, couverture
 Mots-clés: garantie, pièce, main d'œuvre, réseau, procédure, casse
+
+[EXPLICATION PÉDAGOGIQUE FAP]
+Le FAP (Filtre à Particules) est obligatoire sur tous les diesels depuis 2011. Il capture les particules de suie dans un monolithe en céramique. Quand il se sature, le moteur tente une régénération automatique en brûlant les particules à haute température. Si la régénération échoue répétitivement, le filtre se colmate définitivement et nécessite un nettoyage professionnel.
+Synonymes: explication, fonctionnement, principe, éducation
+Mots-clés: fap, obligatoire, particules, monolithe, régénération, température
+
+[CLÔTURE EMPATHIQUE]
+"Avec plaisir ! Votre problème de FAP sera résolu efficacement grâce à notre réseau de professionnels. N'hésitez pas à revenir si vous avez d'autres questions. Bonne route !"
+Synonymes: fin, conclusion, au revoir, satisfaction
+Mots-clés: plaisir, résolu, professionnel, questions, route
